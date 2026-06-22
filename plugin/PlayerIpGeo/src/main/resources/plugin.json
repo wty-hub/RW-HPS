@@ -1,0 +1,8 @@
+{
+  "name": "PlayerIpGeo",
+  "author": "RW-HPS",
+  "main": "net.rwhps.plugin.playeripgeo.PlayerIpGeoMain",
+  "description": "Print player IP and geolocation on join",
+  "version": "1.0.0",
+  "supportedVersions": ">= 3.0.0"
+}

@@ -63,6 +63,8 @@ dependencies {
 
     compileOnlyAndTest("org.graalvm.js:js:${Versions.graalvmVersion}")
     compileOnlyAndTest("org.graalvm.sdk:graal-sdk:${Versions.graalvmVersion}")
+    compileOnlyAndTest("org.ow2.asm:asm:9.7")
+    compileOnlyAndTest("org.ow2.asm:asm-tree:9.7")
     implementation(fileTree(mapOf("dir" to "libs", "include" to "wasm.jar")))
 
     testApi("org.junit.jupiter:junit-jupiter-engine:5.10.1")

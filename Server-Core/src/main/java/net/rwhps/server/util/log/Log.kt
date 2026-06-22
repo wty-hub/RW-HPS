@@ -91,7 +91,11 @@ object Log: LogCore() {
 
     private fun Any.parse(vararg params: Any): Any {
         return if (this is String) {
-            MessageFormat(parseLog(this, *params)).format(params)
+            if (params.isEmpty()) {
+                this
+            } else {
+                MessageFormat(parseLog(this, *params)).format(params)
+            }
         } else {
             this
         }

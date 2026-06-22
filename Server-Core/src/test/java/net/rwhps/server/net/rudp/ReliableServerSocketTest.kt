@@ -12,6 +12,7 @@ import net.rwhps.server.io.output.DisableSyncByteArrayOutputStream
 import net.rwhps.server.util.internal.net.rudp.ReliableServerSocket
 import net.rwhps.server.util.io.IOUtils
 import net.rwhps.server.util.log.Log
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.io.DataInputStream
 
@@ -21,6 +22,7 @@ import java.io.DataInputStream
  */
 internal class ReliableServerSocketTest {
     @Test
+    @Disabled("Manual RUDP debug server; blocks forever on accept()")
     fun startPort() {
         Log.set("ALL")
 

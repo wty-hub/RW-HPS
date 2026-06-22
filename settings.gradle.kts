@@ -9,4 +9,7 @@ include(":ASM-Framework")
 include(":Server-Core")
 include(":Server-All")
 
+include(":plugin:PlayerIpGeo")
+include(":plugin:RankUpList")
+
 

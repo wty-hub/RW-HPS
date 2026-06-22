@@ -19,25 +19,23 @@ import net.rwhps.server.game.event.core.EventListenerHost
 import net.rwhps.server.game.event.game.ServerGameOverEvent
 import net.rwhps.server.game.manage.HeadlessModuleManage
 import net.rwhps.server.game.player.PlayerHess
-import net.rwhps.server.net.NetService
 import net.rwhps.server.net.core.IRwHps
 import net.rwhps.server.net.core.server.AbstractNetConnectServer
 import net.rwhps.server.plugin.Plugin
 import net.rwhps.server.util.IpUtils
-import net.rwhps.server.util.algorithms.Base64
+import net.rwhps.server.util.algorithms.digest.DigestUtils
 import net.rwhps.server.util.annotations.core.EventListenerHandler
-import net.rwhps.server.util.file.json.Json
 import net.rwhps.server.util.game.command.CommandHandler
-import net.rwhps.server.util.inline.ifEmptyResult
 import net.rwhps.server.util.log.Log
+import net.rwhps.server.util.math.RandomUtils
 import net.rwhps.server.util.str.StringFilteringUtil.cutting
+import okhttp3.FormBody
+import java.util.UUID
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
 
 
 internal class UpListMain: Plugin() {
-    private val version = "Version=HPS#1"
     private val privateIp: String
         get() {
             var privateIpTemp = IpUtils.getPrivateIp()
@@ -54,12 +52,12 @@ internal class UpListMain: Plugin() {
 
     private var upServerList = false
 
-    /* DATA Cache */
-    private lateinit var serverID: String
-    private lateinit var addData: String
-    private lateinit var openData: String
-    private lateinit var updateData: String
-    private lateinit var removeData: String
+    private var userId = ""
+    private var privateToken = ""
+    private var tokenMd5 = ""
+    private var timestampNs = 0L
+    private var roomId = ""
+    private var slot = 0
 
     private var uplistFlag = 0
     private var over = false
@@ -114,11 +112,10 @@ internal class UpListMain: Plugin() {
                     0 -> {
                         thread {
                             player.sendSystemMessage("耐心等待, 错误信息不打印, 请自行在控制台提前实验")
-                            if (initUpListData()) {
-                                over = true
-                                this.port = port.ifBlank { Data.config.port.toString() }
-                                Threads.newThreadCore { upServerList = true; uplistFlag = 1;uplist(player::sendSystemMessage) }
-                            }
+                            prepareVersionInfo()
+                            over = true
+                            this.port = port.ifBlank { Data.config.port.toString() }
+                            Threads.newThreadCore { upServerList = true; uplistFlag = 1; uplist(player::sendSystemMessage) }
                         }
                     }
                     else -> player.sendSystemMessage("Already on the list")
@@ -141,97 +138,99 @@ internal class UpListMain: Plugin() {
         }
     }
 
-    private fun initUpListData(urlIn: String = ""): Boolean {
+    private fun prepareVersionInfo() {
         if (NetStaticData.RwHps.netType.ordinal in IRwHps.NetType.ServerProtocol.ordinal .. IRwHps.NetType.ServerTestProtocol.ordinal) {
             (NetStaticData.RwHps.typeConnect.abstractNetConnect as AbstractNetConnectServer).run {
                 versionBeta = supportedversionBeta
                 versionGame = supportedversionGame
                 versionGameInt = supportedVersionInt
             }
-
         } else {
             versionBeta = false
             versionGame = "1.15-Other"
             versionGameInt = 176
         }
+    }
 
-
-        val url = urlIn.ifBlank { Data.urlData.readString("Get.Api.UpListData.Bak") }
-
-        var resultUpList = Data.core.http.doPost(url, version)
-
-        if (resultUpList.isBlank() && urlIn.isBlank()) {
-            resultUpList = Data.core.http.doPost(Data.urlData.readString("Get.Api.UpListData"), version)
-        }
-
-        if (resultUpList.isBlank()) {
-            Log.error("[Get UPLIST Data Error] Unexpected error Failed to initialize")
-            return false
-        }
-
-        if (resultUpList.startsWith("[-1]")) {
-            Log.error("[Get UPLIST Data Error] Please Check API")
-            return false
-        } else if (resultUpList.startsWith("[-2]")) {
-            Log.error("[Get UPLIST Data Error] IP prohibited")
-            return false
-        } else if (resultUpList.startsWith("[-4]")) {
-            Log.error("[Get UPLIST Data Error] Version Error")
-            val newUrl = resultUpList.substring(8, resultUpList.length)
-            return if (newUrl == "Error") {
-                Log.error("[Get UPLIST Data Error] Version Error & New Error")
-                false
-            } else {
-                initUpListData(newUrl)
-            }
-        } else if (resultUpList.startsWith("[-0]")) {
-            Log.error("[UPLIST Info] ${resultUpList.removePrefix("[-0]")}")
-        } else if (resultUpList.startsWith("[-5]")) {
-            Log.error(resultUpList)
-        }
-
-        val json = Json(resultUpList)
-
-        serverID = Base64.decodeString(json.getString("id"))
-        addData = Base64.decodeString(json.getString("add"))
-        openData = Base64.decodeString(json.getString("open"))
-        updateData = Base64.decodeString(json.getString("update"))
-        removeData = Base64.decodeString(json.getString("remove"))
-        return true
+    private fun initRoomCredentials() {
+        timestampNs = System.nanoTime()
+        userId = "u_${UUID.randomUUID()}"
+        privateToken = RandomUtils.getRandomByteArray(20).joinToString("") { "%02x".format(it) }
+        tokenMd5 = DigestUtils.md5Hex(privateToken)
+        roomId = ""
+        slot = 0
     }
 
     private fun add(log: StrCons, port: String = "") {
         if (!upServerList) {
-            if (initUpListData()) {
-                this.port = port.ifBlank { Data.config.port.toString() }
-                Threads.newThreadCore { upServerList = true; uplistFlag = 1;uplist(Log::clog) }
-            }
+            prepareVersionInfo()
+            this.port = port.ifBlank { Data.config.port.toString() }
+            Threads.newThreadCore { upServerList = true; uplistFlag = 1; uplist(Log::clog) }
         } else {
             log("Already on the list")
         }
     }
 
+    private fun buildAddArgs(): Map<String, String> {
+        val serverName = cutting(Data.config.serverName, 15)
+        return linkedMapOf(
+            "action" to "add",
+            "user_id" to userId,
+            "_1" to timestampNs.toString(),
+            "private_token" to privateToken,
+            "private_token_2" to DigestUtils.md5Hex(tokenMd5),
+            "confirm" to DigestUtils.md5Hex("a$tokenMd5"),
+            "tx2" to sha256Hex4("_${userId}5"),
+            "tx3" to sha256Hex4("_${userId}${timestampNs + 5}"),
+            "game_version" to versionGameInt.toString(),
+            "game_version_string" to versionGame,
+            "game_version_beta" to versionBeta.toString(),
+            "password_required" to Data.configServer.passwd.isNotBlank().toString(),
+            "game_name" to serverName,
+            "created_by" to serverName,
+            "game_map" to getMapName,
+            "game_status" to gameStatus,
+            "private_ip" to privateIp,
+            "port_number" to port,
+            "game_mode" to "skirmishMap",
+            "player_count" to Data.config.upListPlayerCount.toString(),
+            "max_player_count" to Data.config.upListMaxPlayerCount.toString(),
+        )
+    }
+
+    private fun roomState(): Map<String, String> {
+        val serverName = cutting(Data.config.serverName, 15)
+        return mapOf(
+            "password_required" to Data.configServer.passwd.isNotBlank().toString(),
+            "created_by" to serverName,
+            "private_ip" to privateIp,
+            "port_number" to port,
+            "game_map" to getMapName,
+            "game_mode" to "skirmishMap",
+            "game_status" to gameStatus,
+            "player_count" to Data.config.upListPlayerCount.toString(),
+            "max_player_count" to Data.config.upListMaxPlayerCount.toString(),
+        )
+    }
+
     private fun uplist(print: (String)->Unit) {
-        var addData0 = addData.replace("{RW-HPS.RW.VERSION}", versionGame)
-        addData0 = addData0.replace("{RW-HPS.RW.VERSION.INT}", versionGameInt.toString())
-        addData0 = addData0.replace("{RW-HPS.RW.IS.VERSION}", versionBeta.toString())
-        addData0 = addData0.replace("{RW-HPS.RW.IS.PASSWD}", Data.configServer.passwd.isNotBlank().toString())
-        addData0 = addData0.replace("{RW-HPS.S.NAME}", cutting(Data.config.serverName, 15))
-        addData0 = addData0.replace("{RW-HPS.S.PRIVATE.IP}", privateIp)
-        addData0 = addData0.replace("{RW-HPS.S.PORT}", port)
+        initRoomCredentials()
+        val addArgs = buildAddArgs()
+        Log.debug(addArgs.entries.joinToString("&") { "${it.key}=${it.value}" })
 
+        val addGs1Response = postForm(MASTER_GS1, addArgs)
+        val addGs4Response = postForm(MASTER_GS4, addArgs)
+        val addGs1 = isOk(addGs1Response)
+        val addGs4 = isOk(addGs4Response)
 
-        addData0 = addData0.replace("{RW-HPS.RW.MAP.NAME}", getMapName)
-        addData0 = addData0.replace("{RW-HPS.PLAYER.SIZE}", serverPlayerSize.toString())
+        if (addGs1) {
+            parseAddResponse(addGs1Response)
+        }
+        if (roomId.isEmpty() && addGs4) {
+            parseAddResponse(addGs4Response)
+        }
 
-        addData0 = addData0.replace("{RW-HPS.PLAYER.SIZE.MAX}", Data.configServer.maxPlayer.toString())
-
-
-        Log.debug(addData0)
-
-        val addGs1 = Data.core.rwHttp.doPost("http://gs1.corrodinggames.com/masterserver/1.4/interface", addData0).contains(serverID)
-        val addGs4 = Data.core.rwHttp.doPost("http://gs4.corrodinggames.net/masterserver/1.4/interface", addData0).contains(serverID)
-        if (addGs1 || addGs4) {
+        if ((addGs1 || addGs4) && roomId.isNotEmpty()) {
             if (addGs1 && addGs4) {
                 print(Data.i18NBundle.getinput("err.yesList"))
             } else {
@@ -239,66 +238,108 @@ internal class UpListMain: Plugin() {
             }
         } else {
             print(Data.i18NBundle.getinput("err.noList"))
+            resetUpListState()
+            return
         }
 
-        val openData0 = openData.replace("{RW-HPS.S.PORT}", port)
-
-        val checkPortGs1 = Data.core.rwHttp.doPost("http://gs1.corrodinggames.com/masterserver/1.4/interface", openData0)
-            .contains("true")
-        val checkPortGs4 = Data.core.rwHttp.doPost("http://gs4.corrodinggames.net/masterserver/1.4/interface", openData0)
-            .contains("true")
-        if (checkPortGs1 || checkPortGs4) {
-            print(Data.i18NBundle.getinput("err.yesOpen"))
-        } else {
-            print(Data.i18NBundle.getinput("err.noOpen"))
-        }
+        doSelfInfo(print)
 
         Threads.newTimedTask(CallTimeTask.CustomUpServerListTask, 50, 50, TimeUnit.SECONDS) { update() }
     }
 
+    private fun doSelfInfo(print: (String)->Unit) {
+        if (roomId.isEmpty()) {
+            return
+        }
+        val args = mapOf(
+            "action" to "self_info",
+            "id" to roomId,
+            "port" to port,
+            "tx3" to sha256Hex4("-$roomId${5 + slot}"),
+        )
+        val gs1 = isOk(postForm(MASTER_GS1, args))
+        val gs4 = isOk(postForm(MASTER_GS4, args))
+        if (gs1 || gs4) {
+            print(Data.i18NBundle.getinput("err.yesOpen"))
+        } else {
+            print(Data.i18NBundle.getinput("err.noOpen"))
+        }
+    }
+
     private fun update() {
-        var updateData0 = updateData.replace("{RW-HPS.RW.IS.PASSWD}", Data.configServer.passwd.isNotBlank().toString())
-        updateData0 = updateData0.replace("{RW-HPS.S.NAME}", cutting(Data.config.serverName, 15))
-        updateData0 = updateData0.replace("{RW-HPS.S.PRIVATE.IP}", privateIp)
-        updateData0 = updateData0.replace("{RW-HPS.S.PORT}", port)
-
-
-        updateData0 = updateData0.replace("{RW-HPS.RW.MAP.NAME}", getMapName)
-        updateData0 = updateData0.replace("{RW-HPS.S.STATUS}", if (isRelay || HeadlessModuleManage.hps.room.isStartGame) "ingame" else "battleroom")
-        updateData0 = updateData0.replace("{RW-HPS.PLAYER.SIZE}", serverPlayerSize.toString())
-
-
-        updateData0 = updateData0.replace("{RW-HPS.PLAYER.SIZE.MAX}", Data.configServer.maxPlayer.toString())
-
-
-        Data.core.rwHttp.doPost("http://gs1.corrodinggames.com/masterserver/1.4/interface", updateData0)
-        Data.core.rwHttp.doPost("http://gs4.corrodinggames.net/masterserver/1.4/interface", updateData0)
+        if (!upServerList || roomId.isEmpty()) {
+            return
+        }
+        val args = linkedMapOf(
+            "action" to "update",
+            "id" to roomId,
+            "private_token" to privateToken,
+        )
+        args.putAll(roomState())
+        postForm(MASTER_GS1, args)
+        postForm(MASTER_GS4, args)
     }
 
     private fun remove(log: StrCons) {
-        if (upServerList) {
-            Data.core.rwHttp.doPost("http://gs1.corrodinggames.com/masterserver/1.4/interface", removeData)
-            Data.core.rwHttp.doPost("http://gs4.corrodinggames.net/masterserver/1.4/interface", removeData)
-            upServerList = false
-            uplistFlag = 0
-            log("Deleted UPLIST")
-            return
-        } else {
+        if (!upServerList) {
             log("Not uploaded No deletion is required")
+            return
         }
+        if (roomId.isNotEmpty()) {
+            val args = mapOf(
+                "action" to "remove",
+                "id" to roomId,
+                "private_token" to privateToken,
+            )
+            postForm(MASTER_GS1, args)
+            postForm(MASTER_GS4, args)
+        }
+        resetUpListState()
+        log("Deleted UPLIST")
     }
+
+    private fun resetUpListState() {
+        upServerList = false
+        uplistFlag = 0
+        roomId = ""
+        slot = 0
+    }
+
+    private fun postForm(url: String, data: Map<String, String>): String {
+        val form = FormBody.Builder()
+        data.forEach { (key, value) -> form.add(key, value) }
+        return Data.core.rwHttp.doPost(url, form)
+    }
+
+    private fun isOk(text: String): Boolean {
+        return text.contains("CORRODINGGAMES") && !text.contains("[FAILED]")
+    }
+
+    private fun parseAddResponse(text: String) {
+        val lines = text.trim().lines().filter { it.isNotBlank() }
+        if (lines.size < 2) {
+            Log.error("[UpList] unexpected add response: ${text.take(200)}")
+            return
+        }
+        val parts = lines[1].split(",")
+        roomId = parts[0]
+        slot = parts.getOrNull(1)?.toIntOrNull() ?: 0
+    }
+
+    private fun sha256Hex4(value: String): String {
+        return DigestUtils.sha256Hex(value).substring(0, 4)
+    }
+
+    private val gameStatus get() = if (isRelay || HeadlessModuleManage.hps.room.isStartGame) "ingame" else "battleroom"
 
     private val isRelay get() = (NetStaticData.RwHps.netType == IRwHps.NetType.RelayProtocol || NetStaticData.RwHps.netType == IRwHps.NetType.RelayMulticastProtocol)
 
-    private val getMapName get() = Data.config.subtitle.ifEmptyResult({ if (isRelay) "RELAY" else HeadlessModuleManage.hps.room.maps.mapName }) { cutting(it, 15) }
+    private val getMapName get() = cutting(Data.config.gameMap.ifBlank { Data.config.subtitle }, 15)
 
-    private val serverPlayerSize get() = AtomicInteger().apply {
-        if (isRelay) {
-            NetStaticData.netService.eachAllFind( { it.netType == NetService.Companion.NetTypeEnum.HeadlessNet }) { addAndGet(it.getConnectSize()) }
-        } else {
-            addAndGet(HeadlessModuleManage.hps.room.playerManage.playerGroup.size)
-        }
-    } .get()
+    private companion object {
+        const val MASTER_GS1 = "http://gs1.corrodinggames.com/masterserver/1.4/interface"
+        const val MASTER_GS4 = "http://gs4.corrodinggames.net/masterserver/1.4/interface"
+    }
 
     /**
      * Inject multiple languages into the server

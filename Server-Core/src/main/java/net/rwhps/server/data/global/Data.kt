@@ -168,7 +168,7 @@ object Data {
     @JvmField
     val defPrint = StrCons { obj: String -> Log.clog(obj) }
 
-    var serverCountry = "EN"
+    var serverCountry = "CN"
 
     val neverEnd=false
 }

@@ -44,6 +44,12 @@ data class BeanCoreConfig(
 
     /** 服务器名称 */
     val serverName: String = "RW-HPS",
+    /** 上列表显示的地图名, 留空则使用 subtitle, 均为空则上列表显示空字符串 */
+    val gameMap: String = "",
+    /** 上列表显示的当前人数 */
+    val upListPlayerCount: Int = 0,
+    /** 上列表显示的最大人数 */
+    val upListMaxPlayerCount: Int = 0,
     /** 标题, 留空使用地图名 */
     val subtitle: String = "",
     /** Automatically after starting UPLIST */

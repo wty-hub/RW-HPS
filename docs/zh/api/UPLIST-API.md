@@ -12,41 +12,7 @@
 
 # 使用
 
-## 获取
-
-您可以访问 V5-API   
-HTTPS :  
-`https://api.data.der.kim/UpList/v5/upList`  
-HTTP :  
-`http://http.api.data.der.kim/UpList/v5/upList`
-
-POST :  
-`Version=HPS#1`
-
-获取的数据应该为 `JSON`
-
-```json
-{
-  "id": "",
-  "add": "",
-  "open": "",
-  "update": "",
-  "remove": ""
-}
-```
-
-**错误码** :
-
-```
-[-1] :
-缺少参数
-[-2] :
-IP是黑名单
-[-4] :
-版本错误,请跳转新API ( [-4] 会携带新URL)
-```
-
-内容均为 BASE64加密 解密后只需要替换参数即可
+> RW-HPS Core 现已直接向官方 masterserver 发送请求，不再使用 V5-API 代理。
 
 ## 替换
 

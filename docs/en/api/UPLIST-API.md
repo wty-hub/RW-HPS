@@ -12,41 +12,7 @@ Lightweight and easy-to-use for users.
 
 # Usage
 
-## Access
-
-You can access the V5-API at:  
-HTTPS:  
-`https://api.data.der.kim/UpList/v5/upList`  
-HTTP:  
-`http://http.api.data.der.kim/UpList/v5/upList`
-
-POST:  
-`Version=HPS#1`
-
-The retrieved data should be in JSON format:
-
-```json
-{
-  "id": "",
-  "add": "",
-  "open": "",
-  "update": "",
-  "remove": ""
-}
-```
-
-**Error Codes**:
-
-```
-[-1] :
-Missing parameters
-[-2] :
-IP is blacklisted
-[-4] :
-Version error, please redirect to the new API ([-4] will carry the new URL)
-```
-
-All content is encrypted with BASE64. After decryption, just replace the parameters.
+> RW-HPS Core now sends requests directly to the official masterserver and no longer uses the V5-API proxy.
 
 ## Replacement
 

@@ -1,6 +1,7 @@
-jar:com.github.lucasbru:jbsdiff:9810fdcbfd:null
 jar:org.graalvm.js:js:22.3.2:null
 jar:org.graalvm.regex:regex:22.3.2:null
 jar:org.graalvm.truffle:truffle-api:22.3.2:null
 jar:org.graalvm.sdk:graal-sdk:22.3.2:null
+jar:org.ow2.asm:asm-tree:9.7:null
+jar:org.ow2.asm:asm:9.7:null
 jar:com.ibm.icu:icu4j:71.1:null

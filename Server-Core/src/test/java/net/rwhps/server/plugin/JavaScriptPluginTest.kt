@@ -3,7 +3,7 @@ package net.rwhps.server.plugin
 import net.rwhps.server.data.bean.internal.BeanPluginInfo
 import net.rwhps.server.data.global.Data
 import net.rwhps.server.struct.map.OrderedMap
-import net.rwhps.server.util.StringUtils
+import net.rwhps.server.util.str.StringUtils
 import net.rwhps.server.util.algorithms.Base64
 import net.rwhps.server.util.log.Log
 import org.junit.jupiter.api.Test

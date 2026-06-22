@@ -74,8 +74,8 @@ class Initialization {
         Data.i18NBundleMap["RU"] = I18NBundle(Main::class.java.getResourceAsStream("/bundles/HPS_ru_RU.properties")!!)
         Data.i18NBundleMap["EN"] = I18NBundle(Main::class.java.getResourceAsStream("/bundles/HPS_en_US.properties")!!)
 
-        // Default use EN
-        Data.i18NBundle = Data.i18NBundleMap["EN"]!!
+        // Default use CN
+        Data.i18NBundle = Data.i18NBundleMap["CN"]!!
     }
 
     private fun loadIpBin() {
@@ -167,25 +167,15 @@ class Initialization {
         }
 
         /**
-         * The country is determined according to the server's export ip when it is first started
-         * Choose the language environment according to the country
+         * Choose the language environment according to JVM locale on first start
          */
         internal fun initServerLanguage(pluginData: PluginData, country: String = "") {
             serverCountry = if (country.isBlank()) {
-                pluginData["serverCountry", {
-                    val countryUrl = Data.core.http.doGet(Data.urlData.readString("Get.Api.ServerLanguage.Bak"))
-
-                    when {
-                        countryUrl.contains("香港") -> "HK"
-                        countryUrl.contains("中国") -> "CN"
-                        countryUrl.contains("俄罗斯") -> "RU"
-                        else -> "EN"
-                    }
-                }]
+                pluginData["serverCountry", { detectServerCountryFromLocale() }]
             } else {
                 when {
                     country.contains("HK") || country.contains("CN") || country.contains("RU") -> country
-                    else -> "EN"
+                    else -> "CN"
                 }.also {
                     pluginData["serverCountry"] = it
                 }
@@ -193,6 +183,17 @@ class Initialization {
 
             Data.i18NBundle = Data.i18NBundleMap[serverCountry]!!
             Log.clog(Data.i18NBundle.getinput("server.language"))
+        }
+
+        private fun detectServerCountryFromLocale(): String {
+            return when (java.util.Locale.getDefault().language) {
+                "zh" -> when (java.util.Locale.getDefault().country) {
+                    "HK", "MO", "TW" -> "HK"
+                    else -> "CN"
+                }
+                "ru" -> "RU"
+                else -> "CN"
+            }
         }
 
         private fun eula(pluginData: PluginData) {

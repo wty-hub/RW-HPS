@@ -7,6 +7,8 @@ dependencies {
         exclude("com.mchange", "mchange-commons-java")
         exclude("com.zaxxer", "HikariCP-java7")
     }
+    // Quartz pulls in slf4j-api; provide a NOP binding to silence StaticLoggerBinder warnings
+    implementation("org.slf4j:slf4j-nop:1.7.36")
 }
 
 tasks.jar {
