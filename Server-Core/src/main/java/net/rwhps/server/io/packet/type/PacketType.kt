@@ -41,6 +41,13 @@ enum class PacketType(
     UPDATA_CLASS_RECEIVE(3010),
     STATUS_RESULT(3999),
 
+    /** RWJS mod 传输 — see [net.rwhps.server.net.rwpp.RwppConstants] */
+    MOD_DOWNLOAD_REQUEST(500),
+    MOD_RELOAD_FINISH(502),
+    MOD_CHUNK_ACK(503),
+    DOWNLOAD_MOD_PACK(510),
+    DOWNLOAD_MOD_CHUNK(511),
+
     /**
      * Game Core Packet
      *//* Preregister */

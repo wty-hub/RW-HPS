@@ -193,8 +193,8 @@ internal class UpListMain: Plugin() {
             "private_ip" to privateIp,
             "port_number" to port,
             "game_mode" to "skirmishMap",
-            "player_count" to Data.config.upListPlayerCount.toString(),
-            "max_player_count" to Data.config.upListMaxPlayerCount.toString(),
+            "player_count" to displayPlayerCount.toString(),
+            "max_player_count" to displayMaxPlayerCount.toString(),
         )
     }
 
@@ -208,8 +208,8 @@ internal class UpListMain: Plugin() {
             "game_map" to getMapName,
             "game_mode" to "skirmishMap",
             "game_status" to gameStatus,
-            "player_count" to Data.config.upListPlayerCount.toString(),
-            "max_player_count" to Data.config.upListMaxPlayerCount.toString(),
+            "player_count" to displayPlayerCount.toString(),
+            "max_player_count" to displayMaxPlayerCount.toString(),
         )
     }
 
@@ -329,6 +329,19 @@ internal class UpListMain: Plugin() {
     private fun sha256Hex4(value: String): String {
         return DigestUtils.sha256Hex(value).substring(0, 4)
     }
+
+    private val displayPlayerCount get() = if (Data.config.upListActualPlayerCount) actualPlayerCount else Data.config.upListPlayerCount
+
+    private val displayMaxPlayerCount get() = if (Data.config.upListActualPlayerCount) actualMaxPlayerCount else Data.config.upListMaxPlayerCount
+
+    private val actualPlayerCount: Int
+        get() {
+            var size = 0
+            NetStaticData.netService.eachAll { size += it.getConnectSize() }
+            return size
+        }
+
+    private val actualMaxPlayerCount get() = Data.configServer.maxPlayer
 
     private val gameStatus get() = if (isRelay || HeadlessModuleManage.hps.room.isStartGame) "ingame" else "battleroom"
 

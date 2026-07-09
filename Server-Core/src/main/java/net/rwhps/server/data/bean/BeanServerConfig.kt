@@ -38,6 +38,8 @@ data class BeanServerConfig(
     /** only Admin (Auto) */
     val oneAdmin: Boolean = true,
 
+    /** 禁止单人 -start（至少 2 人在线才可开始） */
+    val denySinglePlayerStart: Boolean = true,
     /** 服务器最小Start人数 (-1 为禁用) */
     val startMinPlayerSize: Int = -1,
     /** 服务器最小AutoStart人数 (-1 为禁用) */
@@ -66,12 +68,27 @@ data class BeanServerConfig(
     /** Mod 加载的错误信息 */
     val modsLoadErrorPrint: Boolean = false,
 
+    /** 向 RWJS 客户端宣告 mod 传输能力（PREREGISTER RoomOption） */
+    val enableModTransfer: Boolean = false,
+    /** RWJS mod 传输协议版本，须与客户端 protocolVersion 一致 */
+    val rwjsProtocolVersion: Int = 4,
+    /** 单 mod 传输体积上限 (MB)，阶段 3 发送时校验 */
+    val maxModTransferSizeMb: Int = 128,
+
     /** 是否保存 RePlay */
     val saveRePlayFile: Boolean = true,
     /***/
 ): AbstractBeanConfig(
         this::class.java, "rwhps.config.server"
 ) {
+    fun minStartPlayerCount(): Int {
+        var min = if (denySinglePlayerStart) 2 else 1
+        if (startMinPlayerSize != -1) {
+            min = maxOf(min, startMinPlayerSize)
+        }
+        return min
+    }
+
     private fun checkValue() {
         // 拒绝最大玩家数超过最小开始玩家数
         if (maxPlayer < startMinPlayerSize) {

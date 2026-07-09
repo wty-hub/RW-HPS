@@ -50,6 +50,8 @@ data class BeanCoreConfig(
     val upListPlayerCount: Int = 0,
     /** 上列表显示的最大人数 */
     val upListMaxPlayerCount: Int = 0,
+    /** 上列表显示实际人数（开启后忽略 upListPlayerCount 和 upListMaxPlayerCount） */
+    val upListActualPlayerCount: Boolean = false,
     /** 标题, 留空使用地图名 */
     val subtitle: String = "",
     /** Automatically after starting UPLIST */

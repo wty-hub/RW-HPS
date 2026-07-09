@@ -173,19 +173,25 @@ internal class ClientCommands(handler: CommandHandler) {
         }
         handler.register("start", "clientCommands.start") { _: Array<String>?, player: PlayerHess? ->
             if (player != null) {
-                if (isAdmin(player)) {
-                    if (room.isStartGame) {
-                        player.sendSystemMessage(player.i18NBundle.getinput("err.startGame"))
-                        return@register
-                    }
-
-                    if (Data.configServer.startMinPlayerSize != -1 && Data.configServer.startMinPlayerSize > room.playerManage.playerGroup.size) {
-                        player.sendSystemMessage(player.i18NBundle.getinput("start.playerNo", Data.configServer.startMinPlayerSize))
-                        return@register
-                    }
-                } else {
+                if (!isAdmin(player)) {
                     return@register
                 }
+                if (room.isStartGame) {
+                    player.sendSystemMessage(player.i18NBundle.getinput("err.startGame"))
+                    return@register
+                }
+            } else if (room.isStartGame) {
+                return@register
+            }
+
+            val minPlayers = Data.configServer.minStartPlayerCount()
+            if (room.playerManage.playerGroup.size < minPlayers) {
+                if (player != null) {
+                    player.sendSystemMessage(player.i18NBundle.getinput("start.playerNo", minPlayers))
+                } else {
+                    room.call.sendSystemMessageLocal("start.playerNo", minPlayers)
+                }
+                return@register
             }
 
             if (room.maps.mapType != GameMaps.MapType.DefaultMap) {

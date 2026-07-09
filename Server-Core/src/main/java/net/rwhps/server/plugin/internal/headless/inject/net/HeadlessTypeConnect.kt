@@ -16,6 +16,8 @@ import net.rwhps.server.io.packet.type.PacketType
 import net.rwhps.server.net.core.ConnectionAgreement
 import net.rwhps.server.net.core.TypeConnect
 import net.rwhps.server.net.core.server.AbstractNetConnect
+import net.rwhps.server.net.rwpp.ModTransferHandler
+import net.rwhps.server.net.rwpp.ModTransferSupport
 import net.rwhps.server.plugin.internal.headless.inject.core.GameEngine.netEngine
 import net.rwhps.server.plugin.internal.headless.inject.lib.PlayerConnectX
 import net.rwhps.server.util.log.Log
@@ -76,7 +78,26 @@ open class HeadlessTypeConnect: TypeConnect {
                     con.sendRelayServerTypeReply(packet)
                 }
                 PacketType.DISCONNECT -> {
+                    ModTransferHandler.onPlayerDisconnect(con)
                     con.disconnect()
+                    packet.status = Control.EventNext.STOPPED
+                }
+                PacketType.MOD_DOWNLOAD_REQUEST -> {
+                    if (ModTransferSupport.isActive()) {
+                        ModTransferHandler.handleDownloadRequest(con, packet)
+                    }
+                    packet.status = Control.EventNext.STOPPED
+                }
+                PacketType.MOD_CHUNK_ACK -> {
+                    if (ModTransferSupport.isActive()) {
+                        ModTransferHandler.handleChunkAck(con, packet)
+                    }
+                    packet.status = Control.EventNext.STOPPED
+                }
+                PacketType.MOD_RELOAD_FINISH -> {
+                    if (ModTransferSupport.isActive()) {
+                        ModTransferHandler.handleReloadFinish(con, packet)
+                    }
                     packet.status = Control.EventNext.STOPPED
                 }
                 else -> {}
