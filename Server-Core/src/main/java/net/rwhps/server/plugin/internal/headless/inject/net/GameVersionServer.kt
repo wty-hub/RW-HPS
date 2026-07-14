@@ -36,6 +36,7 @@ import net.rwhps.server.net.core.server.AbstractNetConnect
 import net.rwhps.server.net.core.server.AbstractNetConnectData
 import net.rwhps.server.net.core.server.AbstractNetConnectServer
 import net.rwhps.server.net.netconnectprotocol.internal.relay.relayServerTypeInternal
+import net.rwhps.server.net.rwpp.ModTransferHandler
 import net.rwhps.server.net.netconnectprotocol.internal.relay.relayServerTypeReplyInternalPacket
 import net.rwhps.server.net.netconnectprotocol.internal.server.playerExitInternalPacket
 import net.rwhps.server.plugin.internal.headless.inject.core.GameEngine
@@ -361,6 +362,7 @@ open class GameVersionServer(val playerConnectX: PlayerConnectX): AbstractNetCon
     }
 
     override fun disconnect() {
+        ModTransferHandler.onPlayerDisconnect(this)
         if (super.isDis) {
             return
         }

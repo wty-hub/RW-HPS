@@ -25,6 +25,7 @@ import net.rwhps.server.io.GameOutputStream
 import net.rwhps.server.io.output.CompressOutputStream
 import net.rwhps.server.io.packet.type.PacketType
 import net.rwhps.server.net.core.ConnectionAgreement
+import net.rwhps.server.net.rwpp.ModTransferHandler
 import net.rwhps.server.net.rwpp.ModTransferSupport
 import net.rwhps.server.plugin.internal.headless.inject.core.GameEngine
 import net.rwhps.server.plugin.internal.headless.inject.core.link.PrivateClassLinkPlayer
@@ -80,8 +81,10 @@ class PlayerConnectX(
                             val o = GameOutputStream()
                             val originalFirst = it.readString()
                             o.writeString(
-                                if (ModTransferSupport.isActive()) ModTransferSupport.preregisterPrefix()
-                                else originalFirst
+                                if (ModTransferSupport.isActive()) {
+                                    ModTransferHandler.onCapabilitySent(serverConnect)
+                                    ModTransferSupport.preregisterPrefix()
+                                } else originalFirst
                             )
                             o.transferToFixedLength(it, 12)
                             o.writeString(Data.SERVER_ID)

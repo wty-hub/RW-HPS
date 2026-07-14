@@ -11,8 +11,6 @@ package net.rwhps.server.net.rwpp
 
 import net.rwhps.server.data.global.Data
 import net.rwhps.server.game.manage.HeadlessModuleManage
-import net.rwhps.server.util.file.FileUtils
-import java.io.File
 
 /**
  * 判定服务器是否向 RWJS 客户端宣告 mod 传输能力，并计算 [RwppRoomOption.allModsSize]。
@@ -21,45 +19,24 @@ object ModTransferSupport {
     /** 配置开启且已加载非原版 mod 时，才在 PREREGISTER 中注入 RWJS RoomOption。 */
     @JvmStatic
     fun isActive(): Boolean {
-        if (!Data.configServer.enableModTransfer) {
+        if (!Data.configServer.enableModTransfer || Data.configServer.rwjsProtocolVersion != RwppConstants.DEFAULT_PROTOCOL_VERSION) {
             return false
         }
-        return HeadlessModuleManage.hps.gameUnitData.useMod
+        val snapshot = ModCatalogManager.snapshot()
+        return HeadlessModuleManage.hps.gameUnitData.useMod && snapshot.isValid && snapshot.entries.isNotEmpty()
     }
 
     @JvmStatic
     fun currentRoomOption(): RwppRoomOption = RwppRoomOption(
         canTransferMod = true,
-        allModsSize = computeAllModsSize().coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
+        allModsSize = ModCatalogManager.snapshot().totalSize.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
         protocolVersion = Data.configServer.rwjsProtocolVersion,
     )
 
     @JvmStatic
     fun preregisterPrefix(): String = currentRoomOption().preregisterPrefix()
 
-    /**
-     * 统计 [Data.Plugin_Mods_Path] 下全部 mod 文件体积（字节），供客户端下载进度 UI 使用。
-     */
     @JvmStatic
-    fun computeAllModsSize(): Long {
-        val root = FileUtils.getFolder(Data.Plugin_Mods_Path).file
-        if (!root.exists()) {
-            return 0L
-        }
-        return directorySize(root)
-    }
+    fun computeAllModsSize(): Long = ModCatalogManager.snapshot().totalSize
 
-    private fun directorySize(file: File): Long {
-        if (!file.exists()) {
-            return 0L
-        }
-        if (file.isFile) {
-            return file.length()
-        }
-        var total = 0L
-        file.listFiles()?.forEach { child ->
-            total += directorySize(child)
-        }
-        return total
-    }
 }

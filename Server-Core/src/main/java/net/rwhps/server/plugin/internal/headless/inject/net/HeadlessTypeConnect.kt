@@ -78,7 +78,6 @@ open class HeadlessTypeConnect: TypeConnect {
                     con.sendRelayServerTypeReply(packet)
                 }
                 PacketType.DISCONNECT -> {
-                    ModTransferHandler.onPlayerDisconnect(con)
                     con.disconnect()
                     packet.status = Control.EventNext.STOPPED
                 }

@@ -27,6 +27,7 @@ import net.rwhps.server.game.player.PlayerHess
 import net.rwhps.server.game.room.RelayRoom
 import net.rwhps.server.net.core.server.AbstractNetConnectServer
 import net.rwhps.server.net.netconnectprotocol.realize.GameVersionRelay
+import net.rwhps.server.net.rwpp.ModTransferHandler
 import net.rwhps.server.plugin.internal.headless.inject.core.GameEngine
 import net.rwhps.server.plugin.internal.headless.inject.util.TabCompleterProcess
 import net.rwhps.server.struct.map.BaseMap.Companion.toSeq
@@ -191,6 +192,13 @@ internal class ClientCommands(handler: CommandHandler) {
                 } else {
                     room.call.sendSystemMessageLocal("start.playerNo", minPlayers)
                 }
+                return@register
+            }
+
+            if (!ModTransferHandler.canStart()) {
+                val pending = ModTransferHandler.pendingPlayerNames().joinToString(", ")
+                val message = "Cannot start: waiting for mod synchronization${if (pending.isEmpty()) "." else " ($pending)."}"
+                if (player != null) player.sendSystemMessage(message) else room.call.sendSystemMessage(message)
                 return@register
             }
 

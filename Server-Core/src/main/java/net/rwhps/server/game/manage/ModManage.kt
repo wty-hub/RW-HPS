@@ -10,6 +10,7 @@
 package net.rwhps.server.game.manage
 
 import net.rwhps.server.data.global.Data
+import net.rwhps.server.net.rwpp.ModCatalogManager
 import net.rwhps.server.struct.list.Seq
 import net.rwhps.server.struct.map.BaseMap.Companion.toSeq
 import net.rwhps.server.struct.map.ObjectMap
@@ -48,6 +49,11 @@ object ModManage {
 
         return (enabledMods.size - 1).also {
             HeadlessModuleManage.hps.gameUnitData.useMod = (it > 0)
+            if (it > 0) {
+                ModCatalogManager.refresh()
+            } else {
+                ModCatalogManager.invalidate()
+            }
         }
     }
 

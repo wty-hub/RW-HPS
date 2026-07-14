@@ -74,6 +74,16 @@ data class BeanServerConfig(
     val rwjsProtocolVersion: Int = 4,
     /** 单 mod 传输体积上限 (MB)，阶段 3 发送时校验 */
     val maxModTransferSizeMb: Int = 128,
+    /** 每个传输会话允许的未确认分块数 */
+    val modTransferWindowSize: Int = 32,
+    /** 分块 ACK 超时 (ms) */
+    val modTransferAckTimeoutMs: Long = 10_000,
+    /** 传输会话无活动超时 (ms) */
+    val modTransferSessionTimeoutMs: Long = 300_000,
+    /** 全服并发 mod 传输会话上限 */
+    val maxConcurrentModTransfers: Int = 4,
+    /** 目录 mod 归档缓存总上限 (MB) */
+    val modTransferArchiveCacheSizeMb: Int = 512,
 
     /** 是否保存 RePlay */
     val saveRePlayFile: Boolean = true,
@@ -93,11 +103,30 @@ data class BeanServerConfig(
         // 拒绝最大玩家数超过最小开始玩家数
         if (maxPlayer < startMinPlayerSize) {
             Log.warn("MaxPlayer < StartMinPlayerSize , Reset !")
-            coverField("StartMinPlayerSize", 0)
+            coverField("startMinPlayerSize", 0)
         }
         if (maxPlayer > 100) {
             Log.warn("MaxPlayer > GameMaxPlayerSize , Reset !")
             //coverField("MaxPlayer",100)
+        }
+        checkRange("rwjsProtocolVersion", rwjsProtocolVersion.toLong(), 1, 4, 4)
+        checkRange("maxModTransferSizeMb", maxModTransferSizeMb.toLong(), 1, 2048, 128)
+        checkRange("modTransferWindowSize", modTransferWindowSize.toLong(), 1, 256, 32)
+        checkRange("modTransferAckTimeoutMs", modTransferAckTimeoutMs, 1_000, 120_000, 10_000)
+        checkRange("modTransferSessionTimeoutMs", modTransferSessionTimeoutMs, 10_000, 3_600_000, 300_000)
+        checkRange("maxConcurrentModTransfers", maxConcurrentModTransfers.toLong(), 1, 64, 4)
+        checkRange("modTransferArchiveCacheSizeMb", modTransferArchiveCacheSizeMb.toLong(), 1, 8192, 512)
+        if (modTransferSessionTimeoutMs <= modTransferAckTimeoutMs) {
+            Log.warn("Mod transfer session timeout must exceed ACK timeout, reset to 300000ms")
+            coverField("modTransferSessionTimeoutMs", 300_000L)
+        }
+    }
+
+    private fun checkRange(name: String, value: Long, min: Long, max: Long, defaultValue: Long) {
+        if (value !in min..max) {
+            Log.warn("$name is outside $min..$max, reset to $defaultValue")
+            val intFields = setOf("rwjsProtocolVersion", "maxModTransferSizeMb", "modTransferWindowSize", "maxConcurrentModTransfers", "modTransferArchiveCacheSizeMb")
+            coverField(name, if (name in intFields) defaultValue.toInt() else defaultValue)
         }
     }
 

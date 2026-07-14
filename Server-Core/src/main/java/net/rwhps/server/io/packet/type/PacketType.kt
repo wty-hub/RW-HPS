@@ -11,6 +11,7 @@ package net.rwhps.server.io.packet.type
 
 import net.rwhps.server.io.GameOutputStream
 import net.rwhps.server.io.packet.Packet
+import net.rwhps.server.net.rwpp.RwppConstants
 import net.rwhps.server.util.inline.ifNullResult
 
 /**
@@ -42,11 +43,11 @@ enum class PacketType(
     STATUS_RESULT(3999),
 
     /** RWJS mod 传输 — see [net.rwhps.server.net.rwpp.RwppConstants] */
-    MOD_DOWNLOAD_REQUEST(500),
-    MOD_RELOAD_FINISH(502),
-    MOD_CHUNK_ACK(503),
-    DOWNLOAD_MOD_PACK(510),
-    DOWNLOAD_MOD_CHUNK(511),
+    MOD_DOWNLOAD_REQUEST(RwppConstants.MOD_DOWNLOAD_REQUEST),
+    MOD_RELOAD_FINISH(RwppConstants.MOD_RELOAD_FINISH),
+    MOD_CHUNK_ACK(RwppConstants.MOD_CHUNK_ACK),
+    DOWNLOAD_MOD_PACK(RwppConstants.DOWNLOAD_MOD_PACK),
+    DOWNLOAD_MOD_CHUNK(RwppConstants.DOWNLOAD_MOD_CHUNK),
 
     /**
      * Game Core Packet
