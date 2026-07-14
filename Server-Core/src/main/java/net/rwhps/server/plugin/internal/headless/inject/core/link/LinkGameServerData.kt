@@ -10,6 +10,8 @@
 package net.rwhps.server.plugin.internal.headless.inject.core.link
 
 import com.corrodinggames.rts.game.n
+import com.corrodinggames.rts.gameFramework.j.ai
+import net.rwhps.server.game.GameMaps
 import net.rwhps.server.game.headless.core.link.AbstractLinkGameServerData
 import net.rwhps.server.game.headless.core.link.AbstractLinkPlayerData
 import net.rwhps.server.plugin.internal.headless.inject.core.GameEngine
@@ -73,6 +75,38 @@ class LinkGameServerData: AbstractLinkGameServerData {
             GameEngine.netEngine.ay.g = value
         }
         get() = GameEngine.netEngine.ay.g
+
+    override fun resetRoomToDefaults() {
+        val defaults = GameEngine.netEngine.ay
+        defaults.c = AbstractLinkGameServerData.DEFAULT_CREDITS
+        defaults.d = AbstractLinkGameServerData.DEFAULT_FOG
+        defaults.e = true
+        defaults.i = AbstractLinkGameServerData.DEFAULT_NUKES
+        defaults.j = false
+        defaults.k = false
+        defaults.l = AbstractLinkGameServerData.DEFAULT_SHARED_CONTROL
+        defaults.m = false
+        defaults.n = false
+        defaults.o = true
+        defaults.p = false
+        defaults.q = 0
+        defaults.f = AbstractLinkGameServerData.DEFAULT_AI_DIFFICULTY
+        defaults.h = AbstractLinkGameServerData.DEFAULT_INCOME
+        defaults.g = AbstractLinkGameServerData.DEFAULT_STARTING_UNITS
+
+        val mapFileName = "${AbstractLinkGameServerData.DEFAULT_MAP_PLAYER}${AbstractLinkGameServerData.DEFAULT_MAP_NAME}.tmx"
+        GameEngine.netEngine.az = "maps/skirmish/$mapFileName"
+        defaults.a = ai.a
+        defaults.b = mapFileName
+
+        GameEngine.data.room.maps.apply {
+            mapName = AbstractLinkGameServerData.DEFAULT_MAP_NAME
+            mapType = GameMaps.MapType.DefaultMap
+            mapPlayer = AbstractLinkGameServerData.DEFAULT_MAP_PLAYER
+            mapData = null
+        }
+        GameEngine.netEngine.L()
+    }
 
     override fun getPlayerData(position: Int): AbstractLinkPlayerData {
         return PrivateClassLinkPlayer(WaitResultUtils.waitResult { n.k(position) } ?: throw ImplementedException.PlayerImplementedException(

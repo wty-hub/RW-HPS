@@ -1,0 +1,9 @@
+{
+  "name": "NameFilter",
+  "author": "RW-HPS",
+  "main": "net.rwhps.plugin.namefilter.NameFilterMain",
+  "description": "Kick players whose name does not match the configured regex",
+  "version": "1.0.0",
+  "supportedVersions": ">= 3.0.0",
+  "import": "Password"
+}

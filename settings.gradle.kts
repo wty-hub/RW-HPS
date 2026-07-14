@@ -10,6 +10,9 @@ include(":Server-Core")
 include(":Server-All")
 
 include(":plugin:PlayerIpGeo")
+include(":plugin:NameFilter")
+include(":plugin:Password")
+include(":plugin:RoomReset")
 include(":plugin:RankUpList")
 
 

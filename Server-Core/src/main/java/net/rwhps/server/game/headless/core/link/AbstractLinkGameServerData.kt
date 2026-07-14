@@ -18,6 +18,18 @@ import net.rwhps.server.util.log.exp.ImplementedException
  * @author Dr (dr@der.kim)
  */
 interface AbstractLinkGameServerData {
+    companion object {
+        const val DEFAULT_MAP_NAME = "Crossing Large (10p)"
+        const val DEFAULT_MAP_PLAYER = "[z;p10]"
+        const val DEFAULT_CREDITS = 0
+        const val DEFAULT_FOG = 2
+        const val DEFAULT_NUKES = false
+        const val DEFAULT_SHARED_CONTROL = false
+        const val DEFAULT_AI_DIFFICULTY = 1
+        const val DEFAULT_INCOME = 1.0f
+        const val DEFAULT_STARTING_UNITS = 1
+    }
+
     @GameSimulationLayer.GameSimulationLayer_KeyWords("overrideTeamLayout: unhandled layout:")
     val teamOperationsSyncObject: Any
 
@@ -36,6 +48,9 @@ interface AbstractLinkGameServerData {
     var income: Float
 
     var startingunits: Int
+
+    /** Restore the original battle-room settings and notify connected clients. */
+    fun resetRoomToDefaults()
 
     fun getDefPlayerData(): AbstractLinkPlayerData {
         return object: AbstractLinkPlayerData {

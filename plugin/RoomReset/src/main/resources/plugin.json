@@ -1,0 +1,9 @@
+{
+  "name": "RoomReset",
+  "author": "RW-HPS",
+  "main": "net.rwhps.plugin.roomreset.RoomResetMain",
+  "description": "Reset the battle room to the original default settings",
+  "version": "1.0.0",
+  "supportedVersions": ">= 3.0.0",
+  "import": "Password"
+}

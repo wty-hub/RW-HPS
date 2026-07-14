@@ -1,0 +1,8 @@
+{
+  "name": "Password",
+  "author": "RW-HPS",
+  "main": "net.rwhps.plugin.password.PasswordMain",
+  "description": "Admin password storage and verification API for dependent plugins",
+  "version": "1.0.0",
+  "supportedVersions": ">= 3.0.0"
+}
