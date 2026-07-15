@@ -22,6 +22,11 @@
 
 请在 [**插件开发目录**](plugin/README.md) 阅读 **RW-HPS-Plugin** 的各种操作
 
+## 服务器功能
+
+- [TXJS Mod 自动传输](run/ModTransfer.md)
+- [TXJS Mod 传输实现设计](dev/ModTransferImplementation.md)
+
 ## RW-HPS 其他文档
 
 ### RW-HPS 版本规范

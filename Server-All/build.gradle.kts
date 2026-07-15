@@ -68,4 +68,11 @@ tasks.jar {
         if (it.isDirectory) it else zipTree(it)
     })
 
+    finalizedBy("copyToRun")
+}
+
+tasks.register<Copy>("copyToRun") {
+    dependsOn(tasks.jar)
+    from(tasks.jar.get().archiveFile)
+    into(rootProject.file("run"))
 }

@@ -252,6 +252,8 @@ Password 插件本身不提供游戏内 UI。依赖插件可结合 RW-HPS 的输
 
 ## 相关文档
 
+- [NameFilter 插件](NameFilter.md)（依赖本插件校验密码）
+- [RoomReset 插件](RoomReset.md)（依赖本插件校验密码）
 - [Plugin 构成与 plugin.json](JsonConfig.md)
 - [依赖其他插件的加载顺序](JsonConfig.md#依赖加载的例子)
 - [服务器配置（房间密码 passwd）](../run/Config.md)

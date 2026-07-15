@@ -203,6 +203,46 @@ RW-HPS支持在服务器控制台处更新服务器,只需输入`tryupdate`即�
 服务器允许客户端保存RePlay文件用于回放游戏过程  
 默认配置为**启用**
 
+### enableModTransfer
+#### 启用 TXJS Mod 自动传输(bool)
+向兼容的 TXJS/RWPP 客户端宣告并传输其缺失的 Mod。仅在 Headless 已加载且能安全映射到 `data/mods` 源文件时生效。
+默认配置为**禁用**。详细部署方式见 [TXJS Mod 传输](ModTransfer.md)。
+
+### rwjsProtocolVersion
+#### TXJS/RWPP 协议版本(int)
+必须与客户端协议版本完全一致，不一致时客户端会主动断开。
+默认配置为**4**。
+
+### maxModTransferSizeMb
+#### 单次请求 Mod 最大总传输体积(int)
+限制一次下载请求中所有 Mod 的总大小上限，单位为 MB。
+默认配置为**128**。
+
+### modTransferWindowSize
+#### 传输 ACK 窗口大小(int)
+每个传输会话允许的未确认分块数。
+默认配置为**32**。
+
+### modTransferAckTimeoutMs
+#### 分块 ACK 超时(long)
+等待客户端确认分块的超时时间，单位毫秒。
+默认配置为**10000**。
+
+### modTransferSessionTimeoutMs
+#### 传输会话无活动超时(long)
+传输会话无活动后的超时时间，单位毫秒；必须大于 `modTransferAckTimeoutMs`。
+默认配置为**300000**。
+
+### maxConcurrentModTransfers
+#### 全服并发传输会话上限(int)
+同时进行的 Mod 传输会话数量上限。
+默认配置为**4**。
+
+### modTransferArchiveCacheSizeMb
+#### 目录 Mod 归档缓存上限(int)
+目录型 Mod 打包缓存占用上限，单位为 MB。
+默认配置为**512**。
+
 
 ## ConfigRelay.json
 

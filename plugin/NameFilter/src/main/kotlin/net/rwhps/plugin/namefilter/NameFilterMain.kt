@@ -17,7 +17,7 @@ class NameFilterMain : Plugin() {
     }
 
     override fun registerCoreCommands(handler: CommandHandler) {
-        handler.register("namefilter", "[args...]", "namefilter") { args: Array<String>, log: StrCons ->
+        handler.register("namefilter", "[args...]", "#昵称过滤：status | setpattern <密码> <正则>") { args: Array<String>, log: StrCons ->
             when (args.getOrNull(0)) {
                 null, "status" -> showStatus(log)
                 "setpattern" -> setPattern(args, log)

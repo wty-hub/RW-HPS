@@ -11,6 +11,10 @@ logs/
 config/
 *.gif
 
+# Local runtime for testing (jar / data / logs / plugins)
+/run/**
+!/run/.gitkeep
+
 version.properties
 
 .attach_*

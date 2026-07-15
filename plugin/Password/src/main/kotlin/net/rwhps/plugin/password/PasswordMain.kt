@@ -19,7 +19,7 @@ class PasswordMain : Plugin() {
     }
 
     override fun registerCoreCommands(handler: CommandHandler) {
-        handler.register("setadminpassword", "<password...>", "password.set") { args: Array<String>, log: StrCons ->
+        handler.register("setadminpassword", "<password...>", "#设置或更新管理员密码") { args: Array<String>, log: StrCons ->
             if (args.isEmpty()) {
                 log("用法: setadminpassword <密码>")
                 return@register
@@ -33,12 +33,12 @@ class PasswordMain : Plugin() {
             }
         }
 
-        handler.register("clearadminpassword", "password.clear") { _: Array<String>, log: StrCons ->
+        handler.register("clearadminpassword", "#清除管理员密码") { _: Array<String>, log: StrCons ->
             verifier.clearPassword()
             log("管理员密码已清除")
         }
 
-        handler.register("adminpassword", "[status]", "password.status") { args: Array<String>, log: StrCons ->
+        handler.register("adminpassword", "[status]", "#查看管理员密码是否已设置") { args: Array<String>, log: StrCons ->
             when (args.getOrNull(0)) {
                 null, "status" -> {
                     if (verifier.isConfigured()) {

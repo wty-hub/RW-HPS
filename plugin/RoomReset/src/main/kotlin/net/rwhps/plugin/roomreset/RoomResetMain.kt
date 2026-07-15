@@ -8,7 +8,7 @@ import net.rwhps.server.util.game.command.CommandHandler
 
 class RoomResetMain : Plugin() {
     override fun registerCoreCommands(handler: CommandHandler) {
-        handler.register("resetroom", "<password>", "roomreset") { args: Array<String>, log: StrCons ->
+        handler.register("resetroom", "<password>", "#将房间设置恢复为原版默认值") { args: Array<String>, log: StrCons ->
             val error = validateReset(args)
             if (error != null) {
                 log(error)
