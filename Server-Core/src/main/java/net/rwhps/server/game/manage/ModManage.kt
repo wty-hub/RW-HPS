@@ -15,6 +15,7 @@ import net.rwhps.server.struct.list.Seq
 import net.rwhps.server.struct.map.BaseMap.Companion.toSeq
 import net.rwhps.server.struct.map.ObjectMap
 import net.rwhps.server.struct.map.OrderedMap
+import net.rwhps.server.util.log.Log
 
 /**
  * Mods 加载管理器
@@ -50,7 +51,18 @@ object ModManage {
         return (enabledMods.size - 1).also {
             HeadlessModuleManage.hps.gameUnitData.useMod = (it > 0)
             if (it > 0) {
-                ModCatalogManager.refresh()
+                val snapshot = ModCatalogManager.refresh()
+                val loadedNames = modList.filter { name -> name != coreName }
+                Log.clog(
+                    "[MODSYNC-HPS] Transfer catalog: ${snapshot.entries.size}/${loadedNames.size} transferable" +
+                        if (snapshot.entries.isEmpty()) "" else " (${snapshot.entries.joinToString { entry -> entry.logicalName }})"
+                )
+                if (snapshot.entries.isEmpty()) {
+                    Log.clog(
+                        "[MODSYNC-HPS] No transferable mods mapped from data/mods; clients without those mods will be kicked. " +
+                            "Loaded: ${loadedNames.joinToString()}"
+                    )
+                }
             } else {
                 ModCatalogManager.invalidate()
             }

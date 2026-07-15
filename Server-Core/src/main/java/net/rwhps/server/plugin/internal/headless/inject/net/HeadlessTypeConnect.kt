@@ -84,18 +84,27 @@ open class HeadlessTypeConnect: TypeConnect {
                 PacketType.MOD_DOWNLOAD_REQUEST -> {
                     if (ModTransferSupport.isActive()) {
                         ModTransferHandler.handleDownloadRequest(con, packet)
+                    } else {
+                        Log.clog(
+                            "[MODSYNC-HPS] Ignored download request from ${con.player?.name ?: "unregistered"}: " +
+                                (ModTransferSupport.inactiveReason() ?: "unknown")
+                        )
                     }
                     packet.status = Control.EventNext.STOPPED
                 }
                 PacketType.MOD_CHUNK_ACK -> {
                     if (ModTransferSupport.isActive()) {
                         ModTransferHandler.handleChunkAck(con, packet)
+                    } else {
+                        Log.clog("[MODSYNC-HPS] Ignored chunk ACK while transfer inactive")
                     }
                     packet.status = Control.EventNext.STOPPED
                 }
                 PacketType.MOD_RELOAD_FINISH -> {
                     if (ModTransferSupport.isActive()) {
                         ModTransferHandler.handleReloadFinish(con, packet)
+                    } else {
+                        Log.clog("[MODSYNC-HPS] Ignored reload finish while transfer inactive")
                     }
                     packet.status = Control.EventNext.STOPPED
                 }

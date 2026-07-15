@@ -45,7 +45,7 @@ _**个人项目, 仅供学习**_
 本 fork 支持在 Headless 服务器上加载并游玩 Mod，并对 TXJS（RWPP 协议）客户端提供 **缺失 Mod 自动传输**。
 
 - 将 Mod 放到运行目录 `data/mods`（支持顶层目录或 `.rwmod`），由 Headless 正常加载即可开房游玩
-- 开启 `enableModTransfer` 后，兼容的 TXJS 客户端若缺少房间所需 Mod，服务器可按协议自动下发
+- 默认开启 `enableModTransfer`；兼容的 TXJS 客户端若缺少房间所需 Mod，服务器可按协议自动下发
 - 每个 Mod 需包含 `mod-info.txt`，且 `title` 与游戏中显示的名称一致
 - 详细配置、限制与排障见文档：[TXJS Mod 自动传输](docs/zh/run/ModTransfer.md)
 

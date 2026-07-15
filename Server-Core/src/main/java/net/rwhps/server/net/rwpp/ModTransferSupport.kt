@@ -18,12 +18,29 @@ import net.rwhps.server.game.manage.HeadlessModuleManage
 object ModTransferSupport {
     /** 配置开启且已加载非原版 mod 时，才在 PREREGISTER 中注入 RWJS RoomOption。 */
     @JvmStatic
-    fun isActive(): Boolean {
-        if (!Data.configServer.enableModTransfer || Data.configServer.rwjsProtocolVersion != RwppConstants.DEFAULT_PROTOCOL_VERSION) {
-            return false
+    fun isActive(): Boolean = inactiveReason() == null
+
+    /**
+     * 返回传输未宣告的原因；已激活时返回 `null`。
+     * 用于踢人/握手排障日志。
+     */
+    @JvmStatic
+    fun inactiveReason(): String? {
+        if (!Data.configServer.enableModTransfer) {
+            return "enableModTransfer=false"
+        }
+        if (Data.configServer.rwjsProtocolVersion != RwppConstants.DEFAULT_PROTOCOL_VERSION) {
+            return "rwjsProtocolVersion=${Data.configServer.rwjsProtocolVersion} (expected ${RwppConstants.DEFAULT_PROTOCOL_VERSION})"
+        }
+        val useMod = runCatching { HeadlessModuleManage.hps.gameUnitData.useMod }.getOrDefault(false)
+        if (!useMod) {
+            return "no non-vanilla mods loaded"
         }
         val snapshot = ModCatalogManager.snapshot()
-        return HeadlessModuleManage.hps.gameUnitData.useMod && snapshot.isValid && snapshot.entries.isNotEmpty()
+        if (!snapshot.isValid || snapshot.entries.isEmpty()) {
+            return "mod catalog empty (loaded mods not mapped to unique data/mods sources; check mod-info.txt title)"
+        }
+        return null
     }
 
     @JvmStatic

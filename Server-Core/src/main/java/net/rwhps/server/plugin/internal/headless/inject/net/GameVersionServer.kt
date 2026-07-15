@@ -36,7 +36,9 @@ import net.rwhps.server.net.core.server.AbstractNetConnect
 import net.rwhps.server.net.core.server.AbstractNetConnectData
 import net.rwhps.server.net.core.server.AbstractNetConnectServer
 import net.rwhps.server.net.netconnectprotocol.internal.relay.relayServerTypeInternal
+import net.rwhps.server.net.rwpp.ModTransferEndpoint
 import net.rwhps.server.net.rwpp.ModTransferHandler
+import net.rwhps.server.net.rwpp.ModTransferSupport
 import net.rwhps.server.net.netconnectprotocol.internal.relay.relayServerTypeReplyInternalPacket
 import net.rwhps.server.net.netconnectprotocol.internal.server.playerExitInternalPacket
 import net.rwhps.server.plugin.internal.headless.inject.core.GameEngine
@@ -63,10 +65,18 @@ import kotlin.math.min
  * @author Dr (dr@der.kim)
  */
 @MainProtocolImplementation
-open class GameVersionServer(val playerConnectX: PlayerConnectX): AbstractNetConnect(playerConnectX.connectionAgreement), AbstractNetConnectData, AbstractNetConnectServer {
+open class GameVersionServer(val playerConnectX: PlayerConnectX): AbstractNetConnect(playerConnectX.connectionAgreement), AbstractNetConnectData, AbstractNetConnectServer, ModTransferEndpoint {
     init {
         playerConnectX.serverConnect = this
     }
+
+    override val connectionId: String
+        get() = playerConnectX.connectionAgreement.id
+
+    override fun playerLabel(): String =
+        runCatching { if (this::player.isInitialized) player.name else null }.getOrNull()
+            ?.takeIf { it.isNotBlank() }
+            ?: "unregistered connection"
 
     private var relaySelect: ((String) -> Unit)? = null
 
@@ -362,6 +372,12 @@ open class GameVersionServer(val playerConnectX: PlayerConnectX): AbstractNetCon
     }
 
     override fun disconnect() {
+        val label = runCatching { playerLabel() }.getOrDefault("unregistered connection")
+        val transferState = runCatching { ModTransferHandler.state(this).name }.getOrDefault("unavailable")
+        Log.clog(
+            "[MODSYNC-HPS] disconnect $label: transferState=$transferState; " +
+                "active=${ModTransferSupport.isActive()}; reason=${ModTransferSupport.inactiveReason() ?: "none"}"
+        )
         ModTransferHandler.onPlayerDisconnect(this)
         if (super.isDis) {
             return

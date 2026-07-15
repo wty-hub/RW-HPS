@@ -26,7 +26,7 @@ _**Personal project, for learning only**_
 This fork can load and play Mods on Headless servers, and can **auto-transfer missing Mods** to TXJS (RWPP protocol) clients.
 
 - Place Mods under `data/mods` (top-level folders or `.rwmod` files); once Headless loads them, players can join and play
-- With `enableModTransfer` enabled, compatible TXJS clients that lack required Mods can download them from the server
+- `enableModTransfer` is on by default; compatible TXJS clients that lack required Mods can download them from the server
 - Each Mod must include `mod-info.txt`, and its `title` must match the in-game display name
 - See [TXJS Mod Transfer](docs/zh/run/ModTransfer.md) for configuration, limits, and troubleshooting
 

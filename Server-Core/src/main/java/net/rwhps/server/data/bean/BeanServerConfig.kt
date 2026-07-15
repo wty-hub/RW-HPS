@@ -69,13 +69,13 @@ data class BeanServerConfig(
     val modsLoadErrorPrint: Boolean = false,
 
     /** 向 RWJS 客户端宣告 mod 传输能力（PREREGISTER RoomOption） */
-    val enableModTransfer: Boolean = false,
+    val enableModTransfer: Boolean = true,
     /** RWJS mod 传输协议版本，须与客户端 protocolVersion 一致 */
     val rwjsProtocolVersion: Int = 4,
     /** 单 mod 传输体积上限 (MB)，阶段 3 发送时校验 */
     val maxModTransferSizeMb: Int = 128,
-    /** 每个传输会话允许的未确认分块数 */
-    val modTransferWindowSize: Int = 32,
+    /** 每个传输会话允许的未确认分块数；对 TXJS 默认 1，避免客户端乱序处理 */
+    val modTransferWindowSize: Int = 1,
     /** 分块 ACK 超时 (ms) */
     val modTransferAckTimeoutMs: Long = 10_000,
     /** 传输会话无活动超时 (ms) */
@@ -111,7 +111,7 @@ data class BeanServerConfig(
         }
         checkRange("rwjsProtocolVersion", rwjsProtocolVersion.toLong(), 1, 4, 4)
         checkRange("maxModTransferSizeMb", maxModTransferSizeMb.toLong(), 1, 2048, 128)
-        checkRange("modTransferWindowSize", modTransferWindowSize.toLong(), 1, 256, 32)
+        checkRange("modTransferWindowSize", modTransferWindowSize.toLong(), 1, 256, 1)
         checkRange("modTransferAckTimeoutMs", modTransferAckTimeoutMs, 1_000, 120_000, 10_000)
         checkRange("modTransferSessionTimeoutMs", modTransferSessionTimeoutMs, 10_000, 3_600_000, 300_000)
         checkRange("maxConcurrentModTransfers", maxConcurrentModTransfers.toLong(), 1, 64, 4)

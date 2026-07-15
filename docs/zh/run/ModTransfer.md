@@ -1,6 +1,6 @@
 # TXJS Mod 传输
 
-RW-HPS Server 模式可以向 TXJS（RWPP 协议 v4）客户端自动发送其缺失的 Mod。该功能默认关闭，仅适用于 Headless 已成功加载 Mod 的房间。
+RW-HPS Server 模式可以向 TXJS（RWPP 协议 v4）客户端自动发送其缺失的 Mod。该功能默认开启，仅适用于 Headless 已成功加载 Mod 的房间。
 
 维护者需要了解协议、调度器和安全设计时，请阅读 [TXJS Mod 传输实现设计](../dev/ModTransferImplementation.md)。
 
@@ -33,7 +33,7 @@ data/mods/
   "enableModTransfer": true,
   "rwjsProtocolVersion": 4,
   "maxModTransferSizeMb": 128,
-  "modTransferWindowSize": 32,
+  "modTransferWindowSize": 1,
   "modTransferAckTimeoutMs": 10000,
   "modTransferSessionTimeoutMs": 300000,
   "maxConcurrentModTransfers": 4,
@@ -49,7 +49,7 @@ data/mods/
 2. 客户端检测本地缺失项，以 500 包发送逗号分隔的 Mod 显示名。
 3. 服务器按 `ModCatalog` 快照校验请求，仅允许传输目录中已加载且来源唯一的 Mod。
 4. 服务器按 64 KiB 发送 511 分块；首块携带总大小与 SHA-256。
-5. 客户端每接收一个有效分块，以 503 包确认。默认每客户端最多 32 个未确认分块，受 `modTransferWindowSize` 控制。
+5. 客户端每接收一个有效分块，以 503 包确认。默认每客户端最多 1 个未确认分块（适配 TXJS 严格按序接收），受 `modTransferWindowSize` 控制。
 6. 客户端重组、校验、原子落盘并重载后发送 502 包，服务器结束该连接的传输会话。
 
 TXJS 旧版 510 单包格式不会由 RW-HPS 发送。

@@ -25,12 +25,14 @@ import net.rwhps.server.io.GameOutputStream
 import net.rwhps.server.io.output.CompressOutputStream
 import net.rwhps.server.io.packet.type.PacketType
 import net.rwhps.server.net.core.ConnectionAgreement
+import net.rwhps.server.net.rwpp.ModCatalogManager
 import net.rwhps.server.net.rwpp.ModTransferHandler
 import net.rwhps.server.net.rwpp.ModTransferSupport
 import net.rwhps.server.plugin.internal.headless.inject.core.GameEngine
 import net.rwhps.server.plugin.internal.headless.inject.core.link.PrivateClassLinkPlayer
 import net.rwhps.server.plugin.internal.headless.inject.net.GameVersionServer
 import net.rwhps.server.plugin.internal.headless.inject.net.socket.HessSocket
+import net.rwhps.server.util.log.Log
 import java.util.concurrent.TimeUnit
 import com.corrodinggames.rts.gameFramework.j.c as PlayerConnect
 
@@ -67,32 +69,94 @@ class PlayerConnectX(
 
                 if (!Threads.containsTimeTask(CallTimeTask.CallTeamTask)) {
                     Threads.newTimedTask(CallTimeTask.CallTeamTask, 0, 1, TimeUnit.SECONDS) {
+                        // 传输中周期性大厅同步会让 TXJS 反复 ModCheckEvent→再发 500→进度被清零。
+                        if (ModTransferHandler.hasBusyTransfers()) {
+                            return@newTimedTask
+                        }
                         GameEngine.netEngine.e(null as c?)
                         GameEngine.netEngine.L()
                     }
                 }
             }
-        } else {
+        }
+
+        val playerLabel = player?.name ?: connectionAgreement.ip
+        // PREREGISTER/KICK/DISCONNECT 可能在 player 赋值前发出，必须始终处理
+        when (packetHess.b) {
+            PacketType.PREREGISTER_INFO.typeInt -> {
+                GameInputStream(packetHess.c).use {
+                    val o = GameOutputStream()
+                    val originalFirst = it.readString()
+                    val active = ModTransferSupport.isActive()
+                    val rewritten = if (active) {
+                        ModTransferHandler.onCapabilitySent(serverConnect)
+                        ModTransferSupport.preregisterPrefix()
+                    } else {
+                        originalFirst
+                    }
+                    o.writeString(rewritten)
+                    o.transferToFixedLength(it, 12)
+                    o.writeString(Data.SERVER_ID)
+                    it.skip(it.readShort().toLong())
+                    o.transferTo(it)
+                    packetHess.c = o.getByteArray()
+                    if (active) {
+                        val snapshot = ModCatalogManager.snapshot()
+                        Log.clog(
+                            "[MODSYNC-HPS] out PREREGISTER(161) -> $playerLabel: advertised " +
+                                "${snapshot.entries.size} mods / ${snapshot.totalSize} bytes; " +
+                                "prefix=${rewritten.take(96).replace('\n', ' ')}"
+                        )
+                    } else {
+                        Log.clog(
+                            "[MODSYNC-HPS] out PREREGISTER(161) -> $playerLabel: NOT advertised; " +
+                                "reason=${ModTransferSupport.inactiveReason() ?: "unknown"}; " +
+                                "first=${originalFirst.take(64)}"
+                        )
+                    }
+                }
+            }
+            PacketType.KICK.typeInt -> {
+                GameInputStream(packetHess.c).use {
+                    val o = GameOutputStream()
+                    val msg = it.readString()
+                    val compact = msg.replace('\n', ' ').trim()
+                    if (isModMismatchKick(compact)) {
+                        Log.clog("[MODSYNC-HPS] out KICK(150) -> $playerLabel (missing/mismatched mods): $compact")
+                        val inactive = ModTransferSupport.inactiveReason()
+                        Log.clog(
+                            if (inactive != null) {
+                                "[MODSYNC-HPS] transfer status at kick: not advertised ($inactive)"
+                            } else {
+                                "[MODSYNC-HPS] transfer status at kick: was advertised; " +
+                                    "state=${ModTransferHandler.state(serverConnect)}; " +
+                                    "client may lack RWPP v4, never requested download, or left early"
+                            }
+                        )
+                    } else {
+                        Log.clog("[MODSYNC-HPS] out KICK(150) -> $playerLabel: ${compact.take(240)}")
+                    }
+                    if (Data.configServer.maxPlayerJoinAd.isNotBlank() && msg.contains("free")) {
+                        o.writeString(Data.configServer.maxPlayerJoinAd)
+                        packetHess.c = o.getByteArray()
+                    } else if (Data.configServer.startPlayerJoinAd.isNotBlank() && msg.contains("started")) {
+                        o.writeString(Data.configServer.startPlayerJoinAd)
+                        packetHess.c = o.getByteArray()
+                    }
+                }
+            }
+            PacketType.DISCONNECT.typeInt -> {
+                val reason = runCatching {
+                    GameInputStream(packetHess.c).use { stream -> stream.readString() }
+                }.getOrNull()?.replace('\n', ' ')?.trim()
+                Log.clog("[MODSYNC-HPS] out DISCONNECT(111) -> $playerLabel reason=${reason ?: "<none/unreadable>"}")
+            }
+        }
+
+        if (player != null) {
             // 在这里过滤走官方的包, 加入 RW-HPS 的一些修改
             run {
                 when (packetHess.b) {
-                    PacketType.PREREGISTER_INFO.typeInt -> {
-                        GameInputStream(packetHess.c).use {
-                            val o = GameOutputStream()
-                            val originalFirst = it.readString()
-                            o.writeString(
-                                if (ModTransferSupport.isActive()) {
-                                    ModTransferHandler.onCapabilitySent(serverConnect)
-                                    ModTransferSupport.preregisterPrefix()
-                                } else originalFirst
-                            )
-                            o.transferToFixedLength(it, 12)
-                            o.writeString(Data.SERVER_ID)
-                            it.skip(it.readShort().toLong())
-                            o.transferTo(it)
-                            packetHess.c = o.getByteArray()
-                        }
-                    }
                     // 修改, 使 客户端 显示 AdminUI
                     PacketType.SERVER_INFO.typeInt -> {
                         GameInputStream(packetHess.c).use {
@@ -138,15 +202,11 @@ class PlayerConnectX(
                                                 val name = team.readIsString()
                                                 teamIn.writeIsString(name)
 
-                                                //teamIn.writeBoolean(team.readBoolean())
-//                                                team.skip(4)
-//                                                teamIn.writeInt(99999)
-
                                                 teamIn.transferToFixedLength(team, 32)
 
                                                 // 可能存在 Hess 还没刷新的, 所以多来一次判断
-                                                val player = room.playerManage.getPlayer(position)
-                                                if (player == null) {
+                                                val teamPlayer = room.playerManage.getPlayer(position)
+                                                if (teamPlayer == null) {
                                                     teamIn.transferToFixedLength(team, 4)
                                                     // 过滤掉 AI
                                                     if (name.contains("AI", ignoreCase = true)) {
@@ -154,9 +214,8 @@ class PlayerConnectX(
                                                     }
                                                 } else {
                                                     team.skip(4)
-                                                    teamIn.writeInt(if (player.isAdmin) 1 else 0)
+                                                    teamIn.writeInt(if (teamPlayer.isAdmin) 1 else 0)
                                                 }
-
 
                                                 teamIn.writeIsInt(team)
                                                 teamIn.writeIsInt(team)
@@ -173,30 +232,11 @@ class PlayerConnectX(
                             }
                         }
                     }
-                    //
                     PacketType.START_GAME.typeInt -> {
                         if (!room.isStartGame) {
                             room.isStartGame = true
                             room.roomStartGame()
                         }
-                    }
-                }
-            }
-        }
-        run {
-            when (packetHess.b) {
-                PacketType.KICK.typeInt -> {
-                    GameInputStream(packetHess.c).use {
-                        val o = GameOutputStream()
-                        val msg = it.readString()
-                        if (Data.configServer.maxPlayerJoinAd.isNotBlank() && msg.contains("free")) {
-                            o.writeString(Data.configServer.maxPlayerJoinAd)
-                        } else if (Data.configServer.startPlayerJoinAd.isNotBlank() && msg.contains("started")) {
-                            o.writeString(Data.configServer.startPlayerJoinAd)
-                        } else {
-                            return@run
-                        }
-                        packetHess.c = o.getByteArray()
                     }
                 }
             }
@@ -211,5 +251,12 @@ class PlayerConnectX(
 
     override fun g(): String {
         return connectionAgreement.ip
+    }
+
+    private fun isModMismatchKick(message: String): Boolean {
+        val lower = message.lowercase()
+        return (lower.contains("missing") && lower.contains("mod")) ||
+            lower.contains("different mod") ||
+            lower.contains("required by this server")
     }
 }

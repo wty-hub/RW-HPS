@@ -206,7 +206,7 @@ RW-HPS支持在服务器控制台处更新服务器,只需输入`tryupdate`即�
 ### enableModTransfer
 #### 启用 TXJS Mod 自动传输(bool)
 向兼容的 TXJS/RWPP 客户端宣告并传输其缺失的 Mod。仅在 Headless 已加载且能安全映射到 `data/mods` 源文件时生效。
-默认配置为**禁用**。详细部署方式见 [TXJS Mod 传输](ModTransfer.md)。
+默认配置为**启用**。详细部署方式见 [TXJS Mod 传输](ModTransfer.md)。
 
 ### rwjsProtocolVersion
 #### TXJS/RWPP 协议版本(int)
@@ -221,7 +221,7 @@ RW-HPS支持在服务器控制台处更新服务器,只需输入`tryupdate`即�
 ### modTransferWindowSize
 #### 传输 ACK 窗口大小(int)
 每个传输会话允许的未确认分块数。
-默认配置为**32**。
+默认配置为**1**（适配 TXJS；增大可提高吞吐，但易触发乱序错误）。
 
 ### modTransferAckTimeoutMs
 #### 分块 ACK 超时(long)

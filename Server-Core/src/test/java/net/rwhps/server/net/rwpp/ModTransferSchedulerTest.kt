@@ -43,24 +43,35 @@ class ModTransferSchedulerTest {
         } finally { scheduler.close() }
     }
 
-    @Test fun `ACK validation rejects connection name index and duplicate`() = runBlocking {
-        val scheduler = scheduler(window = 2)
+    @Test fun `ACK validation ignores unmatched names and does not free wrong slot`() = runBlocking {
+        val packets = mutableListOf<Packet>(); val scheduler = scheduler(packets = packets, window = 2)
         try {
-            val mod = entry("mod", 1); scheduler.replace("c", "p", ModCatalogSnapshot(3, listOf(mod)), listOf(mod)); scheduler.tick()
-            assertFalse(scheduler.acknowledge("other", "mod", 0)); assertFalse(scheduler.acknowledge("c", "wrong", 0))
-            assertFalse(scheduler.acknowledge("c", "mod", -1)); assertFalse(scheduler.acknowledge("c", "mod", 1))
-            assertTrue(scheduler.acknowledge("c", "mod", 0)); assertFalse(scheduler.acknowledge("c", "mod", 0))
+            val mod = entry("mod", RwppConstants.CHUNK_SIZE * 3)
+            scheduler.replace("c", "p", ModCatalogSnapshot(3, listOf(mod)), listOf(mod))
+            scheduler.tick(); scheduler.tick()
+            assertEquals(2, packets.size)
+            assertTrue(scheduler.acknowledge("other", "mod", 0))
+            assertTrue(scheduler.acknowledge("c", "wrong", 0)) // ignored; no free
+            assertEquals(2, packets.size)
+            scheduler.tick()
+            assertEquals(2, packets.size) // still capped at window until real ACK
+            assertTrue(scheduler.acknowledge("c", "mod", 0))
+            scheduler.tick()
+            assertEquals(3, packets.size)
         } finally { scheduler.close() }
     }
 
-    @Test fun `replacement closes old stream and stale ACK is invalid`() = runBlocking {
+    @Test fun `replacement with different mods restarts after debounce`() = runBlocking {
         var closes = 0; val source = ModSource { object : ByteArrayInputStream(ByteArray(it.size.toInt())) { override fun close() { closes++; super.close() } } }
-        val scheduler = scheduler(source = source)
+        var time = 0L
+        val scheduler = scheduler(source = source, clock = { time }, debounce = 0)
         try {
             val old = entry("old", RwppConstants.CHUNK_SIZE * 2); val fresh = entry("new", 1)
             scheduler.replace("c", "p", ModCatalogSnapshot(4, listOf(old)), listOf(old)); scheduler.tick()
             scheduler.replace("c", "p", ModCatalogSnapshot(5, listOf(fresh)), listOf(fresh))
-            assertEquals(1, closes); assertFalse(scheduler.acknowledge("c", "old", 0)); scheduler.tick(); assertTrue(scheduler.acknowledge("c", "new", 0))
+            assertEquals(1, closes)
+            assertTrue(scheduler.acknowledge("c", "old", 0)) // TXJS: stale ACK ignored
+            scheduler.tick(); assertTrue(scheduler.acknowledge("c", "new", 0))
         } finally { scheduler.close() }
     }
 
@@ -122,14 +133,63 @@ class ModTransferSchedulerTest {
         } finally { scheduler.close() }
     }
 
+    @Test fun `duplicate requests debounce then start once from chunk zero`() = runBlocking {
+        val packets = mutableListOf<Packet>()
+        var time = 0L
+        val scheduler = scheduler(packets = packets, window = 4, clock = { time }, debounce = 100)
+        try {
+            val mod = entry("mod", RwppConstants.CHUNK_SIZE * 4)
+            assertTrue(scheduler.replace("c", "p", ModCatalogSnapshot(20, listOf(mod)), listOf(mod)))
+            scheduler.tick()
+            assertTrue(packets.isEmpty())
+            assertEquals(ModTransferReadyState.WAITING_REQUEST, scheduler.state("c"))
+            assertTrue(scheduler.replace("c", "p", ModCatalogSnapshot(20, listOf(mod)), listOf(mod))) // refresh debounce
+            time = 50
+            scheduler.tick()
+            assertTrue(packets.isEmpty())
+            time = 150
+            repeat(3) { scheduler.tick() }
+            assertEquals(listOf(0, 1, 2), packets.map { chunk(it).index })
+            assertTrue(scheduler.replace("c", "p", ModCatalogSnapshot(20, listOf(mod)), listOf(mod))) // ignore while transferring
+            scheduler.tick()
+            assertEquals(listOf(0, 1, 2, 3), packets.map { chunk(it).index })
+            assertEquals(ModTransferReadyState.TRANSFERRING, scheduler.state("c"))
+        } finally { scheduler.close() }
+    }
+
+    @Test fun `stale ACK does not free a window slot`() = runBlocking {
+        val packets = mutableListOf<Packet>(); val scheduler = scheduler(packets = packets, window = 2)
+        try {
+            val mod = entry("mod", RwppConstants.CHUNK_SIZE * 4)
+            assertTrue(scheduler.replace("c", "p", ModCatalogSnapshot(21, listOf(mod)), listOf(mod)))
+            scheduler.tick(); scheduler.tick()
+            assertEquals(2, packets.size)
+            assertTrue(scheduler.acknowledge("c", "mod", 99)) // unmatched index ignored
+            scheduler.tick()
+            assertEquals(2, packets.size)
+            assertTrue(scheduler.acknowledge("c", "mod", 0))
+            scheduler.tick()
+            assertEquals(3, packets.size)
+        } finally { scheduler.close() }
+    }
+
     private fun scheduler(
         packets: MutableList<Packet> = mutableListOf(), window: Int = 1, maxConcurrent: Int = 4,
         ackTimeout: Long = Long.MAX_VALUE, sessionTimeout: Long = Long.MAX_VALUE,
         source: ModSource = ModSource { ByteArrayInputStream(ByteArray(it.size.toInt())) },
         sender: ModChunkSender = ModChunkSender { _, packet -> packets += packet }, clock: () -> Long = { 0 },
         failures: MutableList<Pair<String, String>> = mutableListOf(),
-    ) = ModTransferScheduler(sender, ModTransferConfig(window, ackTimeout, sessionTimeout, maxConcurrent), source,
-        Dispatchers.Unconfined, clock, { }, { id, reason -> failures += id to reason }, startLoop = false)
+        debounce: Long = 0,
+    ) = ModTransferScheduler(
+        sender,
+        ModTransferConfig(window, ackTimeout, sessionTimeout, maxConcurrent, requestDebounceMs = debounce),
+        source,
+        Dispatchers.Unconfined,
+        clock,
+        { },
+        { id, reason -> failures += id to reason },
+        startLoop = false,
+    )
 
     private fun chunk(packet: Packet) = GameInputStream(packet).use { input ->
         val name = input.readString(); val index = input.readInt(); val total = input.readInt(); val size = input.readLong(); val digest = input.readString()

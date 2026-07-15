@@ -26,6 +26,7 @@
 | `net/rwhps/server/net/rwpp/ModCatalog.kt` | 已加载 Mod 目录快照、归档缓存与安全校验 |
 | `net/rwhps/server/net/rwpp/packet/RwppModPacket.kt` | 自定义包体的编码和解码 |
 | `net/rwhps/server/net/rwpp/ModTransferScheduler.kt` | 分块、ACK 窗口、并发与超时调度 |
+| `net/rwhps/server/net/rwpp/ModTransferEndpoint.kt` | app 类加载器可见的连接抽象，避免引用 Headless 的 `GameVersionServer` |
 | `net/rwhps/server/net/rwpp/ModTransferHandler.kt` | 请求验证及连接生命周期入口 |
 | `plugin/internal/headless/inject/lib/PlayerConnectX.kt` | 改写 161 握手包，声明能力 |
 | `plugin/internal/headless/inject/net/HeadlessTypeConnect.kt` | 拦截 500、502、503 自定义包 |
@@ -125,7 +126,7 @@ byte chunkBytes[chunkLength]
 客户端请求名称 ∩ Headless 已加载名称 ∩ 当前目录唯一条目
 ```
 
-服务端只枚举 `data/mods` 规范根目录的直接子项，并拒绝越界路径与不安全符号链接。SHA-256 用于检测传输损坏，不提供来源认证；该功能默认关闭，房主需自行承担授权与内容安全责任。
+服务端只枚举 `data/mods` 规范根目录的直接子项，并拒绝越界路径与不安全符号链接。SHA-256 用于检测传输损坏，不提供来源认证；该功能默认开启，房主需自行承担授权与内容安全责任。
 
 ## 8. 错误处理
 
