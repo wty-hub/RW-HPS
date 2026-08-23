@@ -17,7 +17,8 @@ package net.rwhps.server.game.headless.core
  */
 interface AbstractGameFunction {
     /**
-     * 暂停游戏 Loop 线程, 来完成一些避免问题的操作
+     * 把操作排进游戏 Loop 线程执行 ( 尚未进入循环或已在该线程上则立即跑 ),
+     * 避免与渲染并发改游戏世界。
      *
      * @param run 需要运行的 [Runnable]
      */

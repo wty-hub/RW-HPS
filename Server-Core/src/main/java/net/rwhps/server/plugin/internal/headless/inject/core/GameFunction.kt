@@ -9,8 +9,8 @@
 
 package net.rwhps.server.plugin.internal.headless.inject.core
 
+import net.rwhps.server.dependent.redirections.game.MainThreadGate
 import net.rwhps.server.game.headless.core.AbstractGameFunction
-import net.rwhps.server.util.inline.findField
 import net.rwhps.server.util.log.Log
 
 /**
@@ -21,14 +21,11 @@ import net.rwhps.server.util.log.Log
  */
 class GameFunction : AbstractGameFunction {
     override fun suspendMainThreadOperations(run: Runnable) {
-        val running = GameEngine.appGameContainerObject::class.java.findField("paused", Boolean::class.javaPrimitiveType)!!
-        running.setBoolean(GameEngine.appGameContainerObject, true)
         try {
-            run.run()
+            MainThreadGate.runExclusive(run)
         } catch (e: Exception) {
             Log.error("Hess MainThreadOperations", e)
         }
-        running.setBoolean(GameEngine.appGameContainerObject, false)
     }
 
     override val neverEnd: IntArray get() = intArrayOf(GameEngine.gameEngine.bL.C, GameEngine.gameEngine.bL.D)

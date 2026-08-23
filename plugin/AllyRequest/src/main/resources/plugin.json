@@ -1,0 +1,8 @@
+{
+  "name": "AllyRequest",
+  "author": "RW-HPS",
+  "main": "net.rwhps.plugin.allyrequest.AllyRequestMain",
+  "description": "In-game alliance request: .jm <seat> to invite, target replies .y/.n within 30s, timeout means refuse",
+  "version": "1.0.0",
+  "supportedVersions": ">= 3.0.0"
+}

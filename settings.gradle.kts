@@ -14,5 +14,6 @@ include(":plugin:NameFilter")
 include(":plugin:Password")
 include(":plugin:RoomReset")
 include(":plugin:RankUpList")
+include(":plugin:AllyRequest")
 
 

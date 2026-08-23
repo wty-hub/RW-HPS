@@ -29,6 +29,7 @@ object FPSSleepRedirections : RedirectionListener {
     var deltaMillis = 0L
 
     override fun invoke(obj: Any, desc: String, vararg args: Any?) {
+        MainThreadGate.drain()
         deltaMillis = args[0].toString().toLong()
 //        val fps = if (HeadlessModuleManage.initHPS()) {
 //            HeadlessModuleManage.hps.gameHessData.gameFPS
