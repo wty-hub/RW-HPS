@@ -1,0 +1,8 @@
+{
+  "name": "BaiduChatFilter",
+  "author": "RW-HPS",
+  "main": "net.rwhps.plugin.baiduchatfilter.BaiduChatFilterMain",
+  "description": "Filter chat messages using Baidu Content Safety text censorship API",
+  "version": "1.1.0",
+  "supportedVersions": ">= 3.0.0"
+}

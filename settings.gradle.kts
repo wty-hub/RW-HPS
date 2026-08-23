@@ -15,5 +15,7 @@ include(":plugin:Password")
 include(":plugin:RoomReset")
 include(":plugin:RankUpList")
 include(":plugin:AllyRequest")
+include(":plugin:TeamChange")
+include(":plugin:BaiduChatFilter")
 
 

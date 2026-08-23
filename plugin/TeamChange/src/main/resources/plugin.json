@@ -1,0 +1,8 @@
+{
+  "name": "TeamChange",
+  "author": "RW-HPS",
+  "main": "net.rwhps.plugin.teamchange.TeamChangeMain",
+  "description": "Force change player team in-game (also works after game start, via full save sync)",
+  "version": "1.0.0",
+  "supportedVersions": ">= 3.0.0"
+}
